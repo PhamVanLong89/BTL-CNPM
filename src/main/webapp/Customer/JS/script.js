@@ -142,7 +142,7 @@ function addProductToCart(){
             $("#errorQuantity").text("");
             if(response === "Thêm sản phẩm vào giỏ hàng thành công"){
                 alert(response);
-                window.location.href = "/ProjectJavaWeb/Product?chucNang=chiTietSanPham&productId=" + productId;
+                window.location.href = "/BTL_CNPM/Product?chucNang=chiTietSanPham&productId=" + productId;
             }
             else{
                 $("#errorColor").text(response.errorColor);
@@ -164,7 +164,7 @@ function changeQuantity(inputQuantity, sKU){
                 $("#error-" + sKU).text(response);
             }
             else{
-                window.location.href = "/ProjectJavaWeb/OrderDetail?chucNang=hienThi";
+                window.location.href = "/BTL_CNPM/OrderDetail?chucNang=hienThi";
             }
         },
     });
@@ -183,7 +183,7 @@ function order(){
             $("#errorNumberPhone").text("");
             $("#errorPayment").text("");
             if(response === "Vui lòng đăng nhập"){
-                window.location.href = "/ProjectJavaWeb/Customer?chucNang=dang-nhap";
+                window.location.href = "/BTL_CNPM/Customer?chucNang=dang-nhap";
             }
             else if(response === "Đặt hàng thành công. Vui lòng xem lại thông tin đơn hàng" || response === "Đặt hàng thất bại"){
                 $("#modal-message").modal('show');
@@ -213,5 +213,5 @@ function changeAddressOrder(){
 }
 
 function redirectPage(){
-    window.location.href = "/ProjectJavaWeb/OrderDetail?chucNang=hienThi";
+    window.location.href = "/BTL_CNPM/OrderDetail?chucNang=hienThi";
 }
