@@ -19,7 +19,6 @@ import java.util.logging.Logger;
 @WebServlet(urlPatterns = {"/Admin"})
 @MultipartConfig
 public class AdminController extends HttpServlet implements Serializable {
-
     private static final long serialVersionUID = 1L;
     private final AdminService adminService;
     private static final String ADMIN = "admin";
@@ -73,6 +72,14 @@ public class AdminController extends HttpServlet implements Serializable {
             }
             if (request.equals("doi-mat-khau")) {
                 showViewChangePassword(req, resp);
+                return;
+            }
+            if (request.equals("ThongTinChiTiet")) {
+                showAdminDetail(req, resp);
+                return;
+            }
+            if (request.equals("adminSearch")) {
+                searchAdmin(req, resp);
             }
         } catch (IOException | ServletException ex) {
             Logger.getLogger(AdminController.class.getName()).log(Level.SEVERE, null, ex);
@@ -91,11 +98,32 @@ public class AdminController extends HttpServlet implements Serializable {
         dispatcher.forward(req, resp);
     }
 
+    private void searchAdmin(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String adminName = req.getParameter("key");
+        List<Admin> listAdmin = adminService.searchAdmin(adminName);
+        req.setAttribute("listAdmin", listAdmin);
+        req.setAttribute("key", adminName);
+        RequestDispatcher dispatcher = req.getRequestDispatcher("/Admin/AdminView.jsp");
+        dispatcher.forward(req, resp);
+    }
+
     private void showViewUpdate(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession();
         Admin adminLogin = (Admin) session.getAttribute(ADMIN_LOGIN);
         req.setAttribute(ADMIN, adminLogin);
         RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher("/Admin/EditAdminView.jsp");
+        dispatcher.forward(req, resp);
+    }
+
+    private void showAdminDetail(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String adminId = req.getParameter("adminId");
+        Admin admin = adminService.getAdminById(adminId);
+        if(admin == null){
+            resp.sendRedirect(req.getContextPath() + "/Admin?chucNang=hienThi");
+            return;
+        }
+        req.setAttribute(ADMIN, admin);
+        RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher("/Admin/AdminDetail.jsp");
         dispatcher.forward(req, resp);
     }
 

@@ -171,32 +171,66 @@
                                             <th scope="col"></th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody id="tBodyProductVariant">
                                         <c:forEach items="${listVariant}" var="variant" >
                                             <tr>
                                                 <td>${variant.color}</td>
                                                 <td>${variant.size}</td>
                                                 <td>${variant.quantity}</td>
                                                 <td>${variant.SKU}</td>
-                                                <td><c:if test = "${variant.image1 != null}"><img src='img/${variant.image1}' alt='' class='img-thumbnail img-product'></c:if></td>
-                                                <td><c:if test = "${variant.image2 != null}"><img src='img/${variant.image2}' alt='' class='img-thumbnail img-product'></c:if></td>
+                                                <td><c:if test = "${variant.image1 != null}"><img src='img/${variant.image1}' alt='' class='rounded img-product'></c:if></td>
+                                                <td><c:if test = "${variant.image2 != null}"><img src='img/${variant.image2}' alt='' class='rounded img-product'></c:if></td>
                                                 <td>
-                                                    <a href="Variant?chucNang=sua&SKU=${variant.SKU}&productId=${product.productId}">Sửa</a>
+                                                    <a href="Variant?chucNang=sua&SKU=${variant.SKU}&productId=${product.productId}" class="btn btn-warning d-block " role="button">Sửa</a>
                                                 </td>
                                                 <td>
-                                                    <a href="Variant?chucNang=xoa&SKU=${variant.SKU}&productId=${product.productId}">Xóa</a>
+                                                    <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#modalDeleteVariant${variant.SKU}">Xóa</button>
+                                                    <!-- Modal delete variant-->
+                                                    <div class="modal fade" id="modalDeleteVariant${variant.SKU}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                                        <div class="modal-dialog" role="document">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title" id="exampleModalLabel">Sản phẩm</h5>
+                                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                        <span aria-hidden="true">&times;</span>
+                                                                    </button>
+                                                                </div>
+                                                                <div class="modal-body">Bạn có muốn xóa sản phẩm màu: <span class="text-danger">${variant.color}</span>, size: <span class="text-danger">${variant.size}</span> không??</div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                                                                    <button type="button" class="btn btn-primary" onclick="deleteVariant('${variant.SKU}')">Có</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         </c:forEach>
                                     </tbody>
-                                </table>  
+                                </table>
+                                <!-- Modal message delete variant -->
+                                <div id="modalMessageDeleteVariant" class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="exampleModalLongTitle">Sản phẩm</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div id="modal-content-message" class="modal-body">
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">OK</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
                         <button type="submit" class="btn btn-info mt-4">Sửa sản phẩm</button>
-                        <button type="button" class="btn btn-dark mt-4"><a class="text-light" href="">Hủy</a></button>
+                        <a class="btn btn-dark mt-4" href="Product?chucNang=hienThi" role="button"><i class="fa fa-arrow-circle-o-left" aria-hidden="true"></i></a>
                     </form>
-
                 </div>
             </main>
             <!-- page-content" -->

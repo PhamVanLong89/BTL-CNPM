@@ -342,4 +342,64 @@ public class CustomerRepository {
         }
         return 0;
     }
+
+    public List<Customer> searchCustomer(String customerName) {
+        String[] keyWord = customerName.split(" ");
+        List<Customer> listCustomer = new ArrayList<>();
+        Connection conn = mysql.getConnect();
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        if (conn == null) {
+            return listCustomer;
+        }
+        try {
+            StringBuilder sqlQuery = new StringBuilder("SELECT UserID, UserName, NumberPhone, Address, Email, StatusActive FROM Users WHERE ");
+            for (int i = 0; i < keyWord.length; i++) {
+                if (i < keyWord.length - 1) {
+                    sqlQuery.append("UserName LIKE ? AND ");
+                } else {
+                    sqlQuery.append("UserName LIKE ?");
+                }
+            }
+            ps = conn.prepareStatement(sqlQuery.toString());
+            for (int i = 0; i < keyWord.length; i++) {
+                ps.setString((i + 1), "%" + keyWord[i] + "%");
+            }
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                Customer customer = new Customer();
+                customer.setCustomerId(rs.getInt(USER_ID));
+                customer.setCustomerName(rs.getString(USER_NAME));
+                customer.setNumberPhone(rs.getString(NUMBER_PHONE));
+                customer.setAddress(rs.getString(ADDRESS));
+                customer.setEmail(rs.getString(EMAIL));
+                customer.setStatusActive(rs.getInt(STATUS_ACTIVE));
+                listCustomer.add(customer);
+            }
+        } catch (SQLException ex) {
+            return listCustomer;
+        } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(CustomerRepository.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            if (ps != null) {
+                try {
+                    ps.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(CustomerRepository.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            try {
+                conn.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(CustomerRepository.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return listCustomer;
+    }
+
 }

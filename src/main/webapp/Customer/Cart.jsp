@@ -39,7 +39,7 @@
                             <div class="modal-body" id="modal-message-body">
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="redirectPage()">OK</button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">OK</button>
                             </div>
                         </div>
                     </div>
@@ -188,7 +188,7 @@
                                                     </div>
                                                     <div class="modal-footer">
                                                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
-                                                        <button type="button" class="btn btn-warning">Lưu</button>
+                                                        <button type="button" class="btn btn-warning" onclick="changeNumberPhone()">Lưu</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -223,12 +223,11 @@
                 </form>
                 </c:when>
                 <c:when test = "${cart == null || empty(cart)}">
-                <div class='row'>
-                    <div class="d-block">
-                        <p class='font-weight-bold ml-5 d-block'>Giỏ hàng trống</p>
+                    <div class='row'>
+                        <img src="https://salt.tikicdn.com/desktop/img/mascot@2x.png" alt="" class="rounded mx-auto d-block mb-2">
+                        <div class="w-100 font-weight-bold text-center">Không có sản phẩm nào trong giỏ hàng của bạn.</div>
+                        <a href="${pageContext.request.contextPath}/" class="btn btn-warning d-block mx-auto mt-4">Tiếp tục mua hàng</a>
                     </div>
-                    <a href="${pageContext.request.contextPath}/" class="badge badge-info d-block">Tiếp tục mua hàng</a>
-                </div>
                 </c:when>
             </c:choose>
         </div>

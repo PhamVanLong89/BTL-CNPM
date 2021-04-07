@@ -67,28 +67,15 @@ public class VariantController extends HttpServlet {
                 resp.sendRedirect(req.getContextPath() + "/Admin?chucNang=dang-nhap");
                 return;
             }
-            if (request.compareTo("xoa") == 0) {
-                showViewDelete(req, resp);
-                return;
-            }
             if (request.compareTo("sua") == 0) {
                 showViewUpdate(req, resp);
+                return;
+            }
+            if (request.compareTo("getVariantByProductId") == 0) {
+                getVariantByProductId(req, resp);
             }
         } catch (IOException | ServletException ex) {
             Logger.getLogger(VariantController.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-
-    private void showViewDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String sKU = req.getParameter(SKU);
-        String productId = req.getParameter(PRODUCT_ID);
-        Variant variant = variantService.getVariantBySKU(sKU);
-        if (variant == null) {
-            resp.sendRedirect(req.getContextPath() + LINK_EDIT_PRODUCT + productId);
-        } else {
-            req.setAttribute(VARIANT, variant);
-            RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher("/Admin/DeleteVariantView.jsp");
-            dispatcher.forward(req, resp);
         }
     }
 
@@ -111,6 +98,14 @@ public class VariantController extends HttpServlet {
         int productId = Integer.parseInt(req.getParameter(PRODUCT_ID));
         List<String> listSize = variantService.getSizeByColor(color, productId);
         new Gson().toJson(listSize, resp.getWriter());
+    }
+
+    private void getVariantByProductId(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType(CONTENT_TYPE);
+        resp.setContentType("application/json");
+        String productId = req.getParameter(PRODUCT_ID);
+        List<Variant> listVariant = variantService.getVariantByProductId(Integer.parseInt(productId));
+        new Gson().toJson(listVariant, resp.getWriter());
     }
 
     private void getSKUByColorAndSize(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -208,22 +203,13 @@ public class VariantController extends HttpServlet {
         }
     }
 
-    private void deleteVariant(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    private void deleteVariant(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String sKU = req.getParameter(SKU);
-        String productId = req.getParameter(PRODUCT_ID);
         int rowAffected = variantService.deleteVariant(sKU);
         if (rowAffected == 0) {
-            Variant variant = variantService.getVariantBySKU(sKU);
-            if (variant == null) {
-                resp.sendRedirect(req.getContextPath() + LINK_EDIT_PRODUCT + productId);
-            } else {
-                req.setAttribute("error", "Xóa biến thể sản phẩm thất bại");
-                req.setAttribute(VARIANT, variant);
-                RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher("/Admin/DeleteVariantView.jsp");
-                dispatcher.forward(req, resp);
-            }
+            resp.getWriter().write("fail");
         } else {
-            resp.sendRedirect(req.getContextPath() + LINK_EDIT_PRODUCT + productId);
+            resp.getWriter().write("success");
         }
     }
 

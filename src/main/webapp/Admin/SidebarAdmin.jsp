@@ -86,7 +86,7 @@
                     <div class="sidebar-submenu">
                         <ul>
                             <li>
-                                <a href="">Xem danh sách đơn hàng</a>
+                                <a href="Order?chucNang=danhSachDonHang">Xem danh sách đơn hàng</a>
                             </li>
                         </ul>
                     </div>

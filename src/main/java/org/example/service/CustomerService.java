@@ -8,6 +8,7 @@ import javax.servlet.http.HttpSession;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -216,5 +217,12 @@ public class CustomerService {
 
     public int changeStatusAccount(Customer customer) {
         return customerRepository.changeStatusAccount(customer);
+    }
+
+    public List<Customer> searchCustomer(String customerName) {
+        if (customerName == null || customerName.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return customerRepository.searchCustomer(customerName);
     }
 }

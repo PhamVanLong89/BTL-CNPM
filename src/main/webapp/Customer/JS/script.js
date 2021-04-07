@@ -57,7 +57,19 @@ $(document).ready(function () {
     });
 
     getSize($("#color").val(), $("#productId").val());
+
+    //Đóng modal thông báo đặt hàng
+    $('#modal-message').on('hidden.bs.modal', function () {
+        window.location.href = "/BTL_CNPM/OrderDetail?chucNang=hienThi";
+    });
+
+    //Đóng modal thông báo hủy đơn hàng
+    $('#modal-cancel-order').on('hidden.bs.modal', function () {
+        window.location.href = "/BTL_CNPM/Order?chucNang=donHangCuaToi";
+    });
+
 });
+
 
 function getSize(color, productId){
     $.ajax({
@@ -153,6 +165,7 @@ function addProductToCart(){
     });
 }
 
+
 function changeQuantity(inputQuantity, sKU){
     var quantity = parseInt(inputQuantity.val());
     $.ajax({
@@ -170,6 +183,7 @@ function changeQuantity(inputQuantity, sKU){
     });
 }
 
+//Đặt hàng
 function order(){
     var addressOrder = $("#addressOrder").val();
     var numberPhoneOrder = $("#numberPhoneOrder").val();
@@ -198,6 +212,7 @@ function order(){
     });
 }
 
+//Thay đổi địa chỉ nhận hàng
 function changeAddressOrder(){
     var address = $("#addressOrderModal").val();
     if(address.trim() === ""){
@@ -212,6 +227,37 @@ function changeAddressOrder(){
     }
 }
 
-function redirectPage(){
-    window.location.href = "/BTL_CNPM/OrderDetail?chucNang=hienThi";
+//Thay đổi số điện thoại nhận hàng
+function changeNumberPhone(){
+    var numberPhone = $("#numberPhoneOrderModal").val();
+    var numberPhonePattern1 = /^[0]{1}[0-9]{9}$/;
+    var numberPhonePattern2 = /^[+]{1}[8]{1}[4]{1}[0-9]{9}$/;
+    if (numberPhone.trim() === "") {
+        $("#errorNumberPhoneModal").text("Vui lòng nhập số điện thoại");
+    } else if (!numberPhonePattern1.test(numberPhone) && !numberPhonePattern2.test(numberPhone)) {
+        $("#errorNumberPhoneModal").text("Số điện thoại không hợp lệ");
+    } else {
+        $("#numberPhoneOrder").val(numberPhone);
+        $("#modalNumberPhone").modal('hide');
+    }
+}
+
+function cancelOrder(orderId){
+    $.ajax({
+        type: "post",
+        url: "Order?chucNang=huyDonHang",
+        data: "orderStatus=Đã hủy" + "&orderId=" + orderId,
+        success: function(response) {
+            if (response.trim() === "success") {
+                $("#modal-content").text("Hủy đơn đặt hàng thành công");
+            } else if (response.trim() === "fail") {
+                $("#modal-content").text("Hủy đơn đặt hàng thất bại");
+            }
+            $('#modal-cancel-order').modal('show');
+        },
+    });
+}
+
+function requestProductFilter(url){
+    window.location.href = url;
 }

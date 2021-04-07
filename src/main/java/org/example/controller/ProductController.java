@@ -1,5 +1,6 @@
 package org.example.controller;
 
+import com.google.gson.Gson;
 import org.apache.commons.math.util.MathUtils;
 import org.example.model.Admin;
 import org.example.model.Product;
@@ -48,6 +49,8 @@ public class ProductController extends HttpServlet {
     private static final String VIEW_EDIT_PRODUCT = "/Admin/EditProductView.jsp";
     private static final String VIEW_ADD_PRODUCT = "/Admin/AddProductView.jsp";
     private static final String CATEGORY = "danhMucSanPham";
+    private static final String MIN_PRICE = "minPrice";
+    private static final String MAX_PRICE = "maxPrice";
 
 
     public ProductController() {
@@ -58,7 +61,7 @@ public class ProductController extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
         String request = req.getParameter("chucNang");
         try {
             if (request.equals("loadMore")) {
@@ -66,26 +69,32 @@ public class ProductController extends HttpServlet {
                 return;
             }
             if (request.equals("hienThiTheoDanhMuc")) {
-                int totalProduct = productService.getTotalProductByCategory(req.getParameter(CATEGORY));
-                int currentPage = pagination(req, totalProduct);
+                int totalProduct = productService.getTotalProductByCategory(req.getParameter(CATEGORY), req.getParameter(MIN_PRICE), req.getParameter(MAX_PRICE));
+                int currentPage = productService.pagination(req, totalProduct);
                 showProductByCategory(req, resp, currentPage);
                 return;
             }
             if (request.equals("hienThiSanPhamMoi")) {
-                int totalProduct = productService.getTotalProductNewByCategory(req.getParameter(CATEGORY));
-                int currentPage = pagination(req, totalProduct);
+                int totalProduct = productService.getTotalProductNewByCategory(req.getParameter(CATEGORY), req.getParameter(MIN_PRICE), req.getParameter(MAX_PRICE));
+                int currentPage = productService.pagination(req, totalProduct);
                 showProductNew(req, resp, currentPage);
                 return;
             }
             if (request.equals("sanPhamGiamGia")) {
-                int totalProduct = productService.getTotalProductSaleByCategory(req.getParameter(CATEGORY));
-                int currentPage = pagination(req, totalProduct);
+                int totalProduct = productService.getTotalProductSaleByCategory(req.getParameter(CATEGORY), req.getParameter(MIN_PRICE), req.getParameter(MAX_PRICE));
+                int currentPage = productService.pagination(req, totalProduct);
                 showProductSale(req, resp, currentPage);
                 return;
             }
             if (request.equals("chiTietSanPham")) {
                 showProductDetail(req);
                 showProductSimilar(req, resp);
+                return;
+            }
+            if (request.equals("timKiem")) {
+                int totalProduct = productService.getTotalSearchProduct(req.getParameter(PRODUCT_NAME));
+                int currentPage = productService.pagination(req, totalProduct);
+                searchProduct(req, resp, currentPage);
                 return;
             }
             if (!adminService.checkLogged(req)) {
@@ -104,13 +113,16 @@ public class ProductController extends HttpServlet {
                 showViewUpdate(req, resp);
                 return;
             }
-            if (request.compareTo("xoa") == 0) {
-                showViewDelete(req, resp);
+            if (request.equals("adminSearch")) {
+                searchProduct(req, resp);
+                return;
+            }
+            if (request.compareTo("sort") == 0) {
+                sortProduct(req, resp);
             }
         } catch (IOException | ServletException ex) {
             Logger.getLogger(ProductController.class.getName()).log(Level.SEVERE, null, ex);
         }
-
     }
 
     private void showViewInsert(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -119,88 +131,103 @@ public class ProductController extends HttpServlet {
     }
 
     private void showProduct(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        List<Product> listProduct = productService.getProduct();
+        String category = req.getParameter(CATEGORY);
+        String maxPrice = req.getParameter(MAX_PRICE);
+        String minPrice = req.getParameter(MIN_PRICE);
+        List<Product> listProduct;
+        if (category == null) {
+            listProduct = productService.filterProductByPrice(minPrice, maxPrice);
+        } else {
+            listProduct = productService.getProductByCategory(category, minPrice, maxPrice);
+        }
         List<Product2> listProductFrontEnd = new ArrayList<>();
-        for (int i = 0; i < listProduct.size(); i++) {
-            Product2 productFrontEnd = new Product2();
-            productFrontEnd.setProductId(String.valueOf(listProduct.get(i).getProductId()));
-            productFrontEnd.setProductName(listProduct.get(i).getProductName());
-            productFrontEnd.setCategoryName(listProduct.get(i).getCategoryName());
-            productFrontEnd.setProductPrice(String.valueOf(listProduct.get(i).getProductPrice()));
-            productFrontEnd.setProductSale(String.valueOf(listProduct.get(i).getProductSale()));
-            productFrontEnd.setDisplayHome(String.valueOf(listProduct.get(i).getDisplayHome()));
-            productFrontEnd.setSaleDate(String.valueOf(listProduct.get(i).getSaleDate()));
-            productFrontEnd.setAdminId(String.valueOf(listProduct.get(i).getAdminId()));
-            productFrontEnd.setImage(variantService.getOneImageVariantByProductId(listProduct.get(i).getProductId()));
+        for (Product product : listProduct) {
+            Product2 productFrontEnd = productService.convertProductToProductFrontEnd(product);
             listProductFrontEnd.add(productFrontEnd);
         }
         req.setAttribute(LIST_PRODUCT, listProductFrontEnd);
+        req.setAttribute(MAX_PRICE, maxPrice);
+        req.setAttribute(MIN_PRICE, minPrice);
+        req.setAttribute("category", category);
+        RequestDispatcher dispatcher = req.getRequestDispatcher("/Admin/ProductView.jsp");
+        dispatcher.forward(req, resp);
+    }
+
+    private void sortProduct(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType("text/html;charset=UTF-8");
+        resp.setContentType("application/json");
+        String columnName = req.getParameter("columnName");
+        String type = req.getParameter("type");
+        List<Product> listProduct = productService.sortProduct(columnName, type);
+        List<Product2> listProductFrontEnd = new ArrayList<>();
+        for (Product product : listProduct) {
+            Product2 productFrontEnd = productService.convertProductToProductFrontEnd(product);
+            listProductFrontEnd.add(productFrontEnd);
+        }
+        new Gson().toJson(listProductFrontEnd, resp.getWriter());
+    }
+
+    //customer search product
+    private void searchProduct(HttpServletRequest req, HttpServletResponse resp, int currentPage) throws ServletException, IOException {
+        String productName = req.getParameter(PRODUCT_NAME);
+        List<Product> listProduct = productService.searchProduct(productName, (currentPage - 1) * 3);
+        List<Product2> listProductFrontEnd = new ArrayList<>();
+        for (Product product : listProduct) {
+            Product2 productFrontEnd = productService.convertProductToProductFrontEnd(product);
+            listProductFrontEnd.add(productFrontEnd);
+        }
+        req.setAttribute(LIST_PRODUCT, listProductFrontEnd);
+        req.setAttribute(PRODUCT_NAME, productName);
+        RequestDispatcher dispatcher = req.getRequestDispatcher("/Customer/ListProductSearch.jsp");
+        dispatcher.forward(req, resp);
+    }
+
+    //admin search product
+    private void searchProduct(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String productName = req.getParameter(PRODUCT_NAME);
+        List<Product> listProduct = productService.searchProduct(productName);
+        List<Product2> listProductFrontEnd = new ArrayList<>();
+        for (Product product : listProduct) {
+            Product2 productFrontEnd = productService.convertProductToProductFrontEnd(product);
+            listProductFrontEnd.add(productFrontEnd);
+        }
+        req.setAttribute(LIST_PRODUCT, listProductFrontEnd);
+        req.setAttribute(PRODUCT_NAME, productName);
         RequestDispatcher dispatcher = req.getRequestDispatcher("/Admin/ProductView.jsp");
         dispatcher.forward(req, resp);
     }
 
     private void showProductByCategory(HttpServletRequest req, HttpServletResponse resp, int currentPage) throws ServletException, IOException {
         String category = req.getParameter(CATEGORY);
-        List<Product> listProduct = productService.getProductByCategory(category, (currentPage - 1) * 3);
+        String maxPrice = req.getParameter(MAX_PRICE);
+        String minPrice = req.getParameter(MIN_PRICE);
+        List<Product> listProduct = productService.getProductByCategory(category, minPrice, maxPrice, (currentPage - 1) * 3);
         List<Product2> listProductFrontEnd = new ArrayList<>();
-        for (int i = 0; i < listProduct.size(); i++) {
-            Product2 productFrontEnd = new Product2();
-            productFrontEnd.setProductId(String.valueOf(listProduct.get(i).getProductId()));
-            productFrontEnd.setProductName(listProduct.get(i).getProductName());
-            productFrontEnd.setCategoryName(listProduct.get(i).getCategoryName());
-            productFrontEnd.setProductPrice(String.valueOf(listProduct.get(i).getProductPrice()));
-            productFrontEnd.setProductSale(String.valueOf(listProduct.get(i).getProductSale()));
-            productFrontEnd.setDisplayHome(String.valueOf(listProduct.get(i).getDisplayHome()));
-            productFrontEnd.setSaleDate(String.valueOf(listProduct.get(i).getSaleDate()));
-            productFrontEnd.setAdminId(String.valueOf(listProduct.get(i).getAdminId()));
-            productFrontEnd.setImage(variantService.getOneImageVariantByProductId(listProduct.get(i).getProductId()));
+        for (Product product : listProduct) {
+            Product2 productFrontEnd = productService.convertProductToProductFrontEnd(product);
             listProductFrontEnd.add(productFrontEnd);
         }
         req.setAttribute(CATEGORY_NAME, category);
+        req.setAttribute(MAX_PRICE, maxPrice);
+        req.setAttribute(MIN_PRICE, minPrice);
         req.setAttribute(LIST_PRODUCT, listProductFrontEnd);
         RequestDispatcher dispatcher = req.getRequestDispatcher("/Customer/ListProduct.jsp");
         dispatcher.forward(req, resp);
     }
 
-    private int pagination(HttpServletRequest req, int totalProduct) {
-        int currentPage = 1;
-        if (req.getParameter("page") != null) {
-            try {
-                currentPage = Integer.parseInt(req.getParameter("page"));
-
-            } catch (Exception ex) {
-                currentPage = 1;
-            }
-        }
-        int totalPage = (int) Math.ceil(totalProduct / 3.0);
-        if (totalPage < currentPage) {
-            currentPage = totalPage;
-        } else if (currentPage < 1) {
-            currentPage = 1;
-        }
-        req.setAttribute("currentPage", currentPage);
-        req.setAttribute("totalPage", totalPage);
-        return currentPage;
-    }
-
     private void showProductNew(HttpServletRequest req, HttpServletResponse resp, int currentPage) throws ServletException, IOException {
         String category = req.getParameter(CATEGORY);
-        List<Product> listProduct = productService.getProductNewByCategory(category, (currentPage - 1) * 3);
+        String maxPrice = req.getParameter(MAX_PRICE);
+        String minPrice = req.getParameter(MIN_PRICE);
+        List<Product> listProduct = productService.getProductNewByCategory(category, minPrice, maxPrice, (currentPage - 1) * 3);
         List<Product2> listProductFrontEnd = new ArrayList<>();
-        for (int i = 0; i < listProduct.size(); i++) {
-            Product2 productFrontEnd = new Product2();
-            productFrontEnd.setProductId(String.valueOf(listProduct.get(i).getProductId()));
-            productFrontEnd.setProductName(listProduct.get(i).getProductName());
-            productFrontEnd.setCategoryName(listProduct.get(i).getCategoryName());
-            productFrontEnd.setProductPrice(String.valueOf(listProduct.get(i).getProductPrice()));
-            productFrontEnd.setProductSale(String.valueOf(listProduct.get(i).getProductSale()));
-            productFrontEnd.setDisplayHome(String.valueOf(listProduct.get(i).getDisplayHome()));
-            productFrontEnd.setSaleDate(String.valueOf(listProduct.get(i).getSaleDate()));
-            productFrontEnd.setAdminId(String.valueOf(listProduct.get(i).getAdminId()));
-            productFrontEnd.setImage(variantService.getOneImageVariantByProductId(listProduct.get(i).getProductId()));
+        for (Product product : listProduct) {
+            Product2 productFrontEnd = productService.convertProductToProductFrontEnd(product);
             listProductFrontEnd.add(productFrontEnd);
         }
         req.setAttribute(CATEGORY_NAME, category);
+        req.setAttribute(MAX_PRICE, maxPrice);
+        req.setAttribute(MIN_PRICE, minPrice);
         req.setAttribute(LIST_PRODUCT, listProductFrontEnd);
         RequestDispatcher dispatcher = req.getRequestDispatcher("/Customer/ListProductNew.jsp");
         dispatcher.forward(req, resp);
@@ -208,22 +235,17 @@ public class ProductController extends HttpServlet {
 
     private void showProductSale(HttpServletRequest req, HttpServletResponse resp, int currentPage) throws ServletException, IOException {
         String category = req.getParameter(CATEGORY);
-        List<Product> listProduct = productService.getProductSaleByCategory(category, (currentPage - 1) * 3);
+        String maxPrice = req.getParameter(MAX_PRICE);
+        String minPrice = req.getParameter(MIN_PRICE);
+        List<Product> listProduct = productService.getProductSaleByCategory(category, minPrice, maxPrice, (currentPage - 1) * 3);
         List<Product2> listProductFrontEnd = new ArrayList<>();
-        for (int i = 0; i < listProduct.size(); i++) {
-            Product2 productFrontEnd = new Product2();
-            productFrontEnd.setProductId(String.valueOf(listProduct.get(i).getProductId()));
-            productFrontEnd.setProductName(listProduct.get(i).getProductName());
-            productFrontEnd.setCategoryName(listProduct.get(i).getCategoryName());
-            productFrontEnd.setProductPrice(String.valueOf(listProduct.get(i).getProductPrice()));
-            productFrontEnd.setProductSale(String.valueOf(listProduct.get(i).getProductSale()));
-            productFrontEnd.setDisplayHome(String.valueOf(listProduct.get(i).getDisplayHome()));
-            productFrontEnd.setSaleDate(String.valueOf(listProduct.get(i).getSaleDate()));
-            productFrontEnd.setAdminId(String.valueOf(listProduct.get(i).getAdminId()));
-            productFrontEnd.setImage(variantService.getOneImageVariantByProductId(listProduct.get(i).getProductId()));
+        for (Product product : listProduct) {
+            Product2 productFrontEnd = productService.convertProductToProductFrontEnd(product);
             listProductFrontEnd.add(productFrontEnd);
         }
         req.setAttribute(CATEGORY_NAME, category);
+        req.setAttribute(MAX_PRICE, maxPrice);
+        req.setAttribute(MIN_PRICE, minPrice);
         req.setAttribute(LIST_PRODUCT, listProductFrontEnd);
         RequestDispatcher dispatcher = req.getRequestDispatcher("/Customer/ListProductSale.jsp");
         dispatcher.forward(req, resp);
@@ -250,18 +272,9 @@ public class ProductController extends HttpServlet {
         } else {
             List<Product> listProduct = productService.getProductByCategory(product.getCategoryName());
             List<Product2> listProductFrontEnd = new ArrayList<>();
-            for (int i = 0; i < listProduct.size(); i++) {
-                if (listProduct.get(i).getProductId() != product.getProductId()) {
-                    Product2 productFrontEnd = new Product2();
-                    productFrontEnd.setProductId(String.valueOf(listProduct.get(i).getProductId()));
-                    productFrontEnd.setProductName(listProduct.get(i).getProductName());
-                    productFrontEnd.setCategoryName(listProduct.get(i).getCategoryName());
-                    productFrontEnd.setProductPrice(String.valueOf(listProduct.get(i).getProductPrice()));
-                    productFrontEnd.setProductSale(String.valueOf(listProduct.get(i).getProductSale()));
-                    productFrontEnd.setDisplayHome(String.valueOf(listProduct.get(i).getDisplayHome()));
-                    productFrontEnd.setSaleDate(String.valueOf(listProduct.get(i).getSaleDate()));
-                    productFrontEnd.setAdminId(String.valueOf(listProduct.get(i).getAdminId()));
-                    productFrontEnd.setImage(variantService.getOneImageVariantByProductId(listProduct.get(i).getProductId()));
+            for (Product value : listProduct) {
+                if (value.getProductId() != product.getProductId()) {
+                    Product2 productFrontEnd = productService.convertProductToProductFrontEnd(value);
                     listProductFrontEnd.add(productFrontEnd);
                 }
             }
@@ -286,20 +299,6 @@ public class ProductController extends HttpServlet {
         }
     }
 
-    private void showViewDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String productId = req.getParameter(PRODUCT_ID);
-        Product product = productService.getProductById(productId);
-        if (product == null) {
-            resp.sendRedirect(req.getContextPath() + VIEW);
-        } else {
-            req.setAttribute(PRODUCT, product);
-            List<Variant> listVariant = variantService.getVariantByProductId(product.getProductId());
-            req.setAttribute(LIST_VARIANT, listVariant);
-            RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher("/Admin/DeleteProductView.jsp");
-            dispatcher.forward(req, resp);
-        }
-    }
-
     private void loadMoreProduct(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         int amountProduct = 0;
         try {
@@ -309,15 +308,15 @@ public class ProductController extends HttpServlet {
         }
         resp.setContentType("text/html;charset=UTF-8");
         List<Product> listProduct = productService.getNext6ProductHome(amountProduct);
-        for (int i = 0; i < listProduct.size(); i++) {
-            String image = variantService.getOneImageVariantByProductId(listProduct.get(i).getProductId());
-            if (listProduct.get(i).getProductSale() == 0) {
+        for (Product product : listProduct) {
+            String image = variantService.getOneImageVariantByProductId(product.getProductId());
+            if (product.getProductSale() == 0) {
                 resp.getWriter().write("<div class=\"product col-md-4 col-6 p-1 p-md-3\">\n" +
                         "                        <div class=\"card card-product mb-3\">\n" +
-                        "                            <a href=\"Product?chucNang=chiTietSanPham&productId=" + listProduct.get(i).getProductId() + "\"><img class=\"card-img-top p-md-3\" src=\"img/" + image + "\" alt=\"product 4\" /></a>\n" +
+                        "                            <a href=\"Product?chucNang=chiTietSanPham&productId=" + product.getProductId() + "\"><img class=\"card-img-top p-md-3\" src=\"img/" + image + "\" alt=\"product 4\" /></a>\n" +
                         "                            <div class=\"card-body\">\n" +
-                        "                                <p class=\"card-title text-center text-truncate\"><a href=\"Product?chucNang=chiTietSanPham&productId=" + listProduct.get(i).getProductId() + "\" class=\"text-decoration-none\">" + listProduct.get(i).getProductName() + "</a></p>\n" +
-                        "                                <h5 class=\"card-text font-weight-bold text-center\">" + listProduct.get(i).getProductPrice() + "đ</h5>\n" +
+                        "                                <p class=\"card-title text-center text-truncate\"><a href=\"Product?chucNang=chiTietSanPham&productId=" + product.getProductId() + "\" class=\"text-decoration-none\">" + product.getProductName() + "</a></p>\n" +
+                        "                                <h5 class=\"card-text font-weight-bold text-center\">" + product.getProductPrice() + "đ</h5>\n" +
                         "                            </div>\n" +
                         "                        </div>\n" +
                         "                    </div>");
@@ -325,12 +324,12 @@ public class ProductController extends HttpServlet {
                 resp.getWriter().write("<div class=\"product col-md-4 col-6 p-1 p-md-3\">\n" +
                         "                            <div class=\"card\">\n" +
                         "                                    <div class='ribbon-wrapper'>\n" +
-                        "                                        <div class='ribbon'>Giảm " + listProduct.get(i).getProductSale() + "%</div>\n" +
+                        "                                        <div class='ribbon'>Giảm " + product.getProductSale() + "%</div>\n" +
                         "                                    </div>\n" +
-                        "                                    <a href=\"Product?chucNang=chiTietSanPham&productId=" + listProduct.get(i).getProductId() + "\"><img class=\"card-img-top p-md-3\" src=\"img/" + image + "\" alt=\"product 1\" /></a>\n" +
+                        "                                    <a href=\"Product?chucNang=chiTietSanPham&productId=" + product.getProductId() + "\"><img class=\"card-img-top p-md-3\" src=\"img/" + image + "\" alt=\"product 1\" /></a>\n" +
                         "                                    <div class=\"card-body\">\n" +
-                        "                                        <p class=\"card-title text-center text-truncate\"><a href=\"Product?chucNang=chiTietSanPham&productId=" + listProduct.get(i).getProductId() + "\" class=\"text-decoration-none\">" + listProduct.get(i).getProductName() + "</a></p>\n" +
-                        "                                        <h5 class=\"card-text font-weight-bold text-center\">" + listProduct.get(i).getProductPrice() + "đ</h5>\n" +
+                        "                                        <p class=\"card-title text-center text-truncate\"><a href=\"Product?chucNang=chiTietSanPham&productId=" + product.getProductId() + "\" class=\"text-decoration-none\">" + product.getProductName() + "</a></p>\n" +
+                        "                                        <h5 class=\"card-text font-weight-bold text-center\">" + product.getProductPrice() + "đ</h5>\n" +
                         "                                    </div>\n" +
                         "                                </div>\n" +
                         "                            </div>");
@@ -339,7 +338,7 @@ public class ProductController extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
         String request = req.getParameter("chucNang");
         try {
             if (!adminService.checkLogged(req)) {
@@ -446,23 +445,13 @@ public class ProductController extends HttpServlet {
         dispatcher.forward(req, resp);
     }
 
-    private void deleteProduct(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    private void deleteProduct(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String productId = req.getParameter(PRODUCT_ID);
         int rowAffected = productService.deleteProduct(productId);
         if (rowAffected == 0) {
-            Product product = productService.getProductById(productId);
-            if (product == null) {
-                resp.sendRedirect(req.getContextPath() + VIEW);
-            } else {
-                req.setAttribute("error", "Xóa sản phẩm thất bại");
-                List<Variant> listVariant = variantService.getVariantByProductId(product.getProductId());
-                req.setAttribute(PRODUCT, product);
-                req.setAttribute(LIST_VARIANT, listVariant);
-                RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher("/Admin/DeleteProductView.jsp");
-                dispatcher.forward(req, resp);
-            }
+            resp.getWriter().write("fail");
         } else {
-            resp.sendRedirect(req.getContextPath() + VIEW);
+            resp.getWriter().write("success");
         }
     }
 

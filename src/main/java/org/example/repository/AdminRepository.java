@@ -321,4 +321,66 @@ public class AdminRepository {
         return 0;
     }
 
+    public List<Admin> searchAdmin(String adminName) {
+        String[] keyWord = adminName.split(" ");
+        List<Admin> listAdmin = new ArrayList<>();
+        Connection conn = mysql.getConnect();
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        if (conn == null) {
+            return listAdmin;
+        }
+        try {
+            StringBuilder sqlQuery = new StringBuilder("SELECT AdminId, AdminName, NumberPhone, Sex, Address, Email, PassWord, Image FROM Admins WHERE ");
+            for (int i = 0; i < keyWord.length; i++) {
+                if (i < keyWord.length - 1) {
+                    sqlQuery.append("AdminName LIKE ? AND ");
+                } else {
+                    sqlQuery.append("AdminName LIKE ?");
+                }
+            }
+            ps = conn.prepareStatement(sqlQuery.toString());
+            for (int i = 0; i < keyWord.length; i++) {
+                ps.setString((i + 1), "%" + keyWord[i] + "%");
+            }
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                Admin admin = new Admin();
+                admin.setAdminId(rs.getInt(ADMIN_ID));
+                admin.setAdminName(rs.getString(ADMIN_NAME));
+                admin.setNumberPhone(rs.getString(NUMBER_PHONE));
+                admin.setSex(rs.getString(SEX));
+                admin.setAddress(rs.getString(ADDRESS));
+                admin.setEmail(rs.getString(EMAIL));
+                admin.setPassword(rs.getString(PASSWORD));
+                admin.setImage(rs.getString(IMAGE));
+                listAdmin.add(admin);
+            }
+        } catch (SQLException ex) {
+            return listAdmin;
+        } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(AdminRepository.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            if (ps != null) {
+                try {
+                    ps.close();
+                } catch (SQLException ex) {
+                    Logger.getLogger(AdminRepository.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            try {
+                conn.close();
+            } catch (SQLException ex) {
+                Logger.getLogger(AdminRepository.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return listAdmin;
+    }
+
+
 }

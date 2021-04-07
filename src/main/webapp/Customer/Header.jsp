@@ -120,8 +120,9 @@
                 </ul>
             </div>
         </div>
-        <form action="" method="get" class="input-group col-lg-4 p-0 pl-md-3" enctype="multipart/form-data">
-            <input type="text" class="form-control" name="search" placeholder="Tìm kiếm..." />
+        <form action="${pageContext.request.contextPath}/Product" method="get" class="input-group col-lg-4 p-0 pl-md-3" enctype="multipart/form-data">
+            <input type="hidden" class="form-control" name="chucNang" value="timKiem" />
+            <input type="text" class="form-control" name="productName" placeholder="Tìm kiếm..." value="${productName}"/>
             <div class="input-group-append">
                 <button class="btn btn-outline-secondary" type="submit"><i class="fas fa-search"></i></button>
             </div>

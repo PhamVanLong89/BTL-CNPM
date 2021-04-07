@@ -1,6 +1,9 @@
 package org.example.service;
 
+import org.example.model.OrderDetail;
+import org.example.model.Product;
 import org.example.model.Variant;
+import org.example.repository.OrderDetailRepository;
 import org.example.repository.ProductRepository;
 import org.example.repository.VariantRepository;
 
@@ -10,11 +13,14 @@ import java.util.List;
 import java.util.Map;
 
 public class OrderDetailService {
+
     private final VariantRepository variantRepository;
+    private final OrderDetailRepository orderDetailRepository;
     private final ProductRepository productRepository;
 
     public OrderDetailService() {
         variantRepository = new VariantRepository();
+        orderDetailRepository = new OrderDetailRepository();
         productRepository = new ProductRepository();
     }
 
@@ -91,4 +97,22 @@ public class OrderDetailService {
         return null;
     }
 
+    public int insertOrderDetail(OrderDetail orderDetail) {
+        return orderDetailRepository.insertOrderDetail(orderDetail);
+    }
+
+    public List<OrderDetail> getOrderDetailByOrderId(int orderId) {
+        List<OrderDetail> listOrderDetail = orderDetailRepository.getOrderDetailByOrderId(orderId);
+        for (OrderDetail orderDetail : listOrderDetail) {
+            Variant variant = variantRepository.getVariantBySKU(orderDetail.getVariant().getSKU());
+            Product product = productRepository.getProductById(variant.getProductId());
+            orderDetail.getVariant().setColor(variant.getColor());
+            orderDetail.getVariant().setSize(variant.getSize());
+            orderDetail.getVariant().setImage1(variant.getImage1());
+            orderDetail.getVariant().setImage2(variant.getImage2());
+            orderDetail.getProduct().setProductName(product.getProductName());
+            orderDetail.getProduct().setProductId(product.getProductId());
+        }
+        return listOrderDetail;
+    }
 }

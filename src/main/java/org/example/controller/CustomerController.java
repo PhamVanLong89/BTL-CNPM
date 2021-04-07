@@ -33,7 +33,6 @@ public class CustomerController extends HttpServlet {
     private static final String LINK_CUSTOMER_LOGIN = "/Customer?chucNang=dang-nhap";
     private static final String VIEW_CUSTOMER_LOGIN = "/Customer/Login.jsp";
     private static final String VIEW_CUSTOMER_REGISTER = "/Customer/Register.jsp";
-    private static final String VIEW_CHANGE_STATUS_ACCOUNT = "/Admin/ChangeStatusView.jsp";
     private static final String VIEW_CHANGE_PASSWORD = "/Customer/ChangePassword.jsp";
     private static final String VIEW_EDIT_CUSTOMER = "/Customer/EditCustomer.jsp";
     private static final String CUSTOMER_NAME = "customerName";
@@ -44,6 +43,7 @@ public class CustomerController extends HttpServlet {
     private static final String CONFIRM_PASSWORD = "confirmPassword";
     private static final String NEW_PASSWORD = "newPassword";
     private static final String CUSTOMER_ID = "customerId";
+    private static final String CONTENT_TYPE = "text/html;charset=UTF-8";
 
     public CustomerController() {
         super();
@@ -55,48 +55,51 @@ public class CustomerController extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String request = req.getParameter("chucNang");
         try {
-            switch (request) {
-                case "dang-ky":
-                    showViewRegister(req, resp);
-                    break;
-                case "dang-nhap":
-                    showViewLogin(req, resp);
-                    break;
-                case "dang-xuat":
-                    logOut(req, resp);
-                    break;
-                case "sua":
-                    if (customerService.checkLogged(req)) {
-                        showViewUpdate(req, resp);
-                    } else {
-                        resp.sendRedirect(req.getContextPath() + LINK_CUSTOMER_LOGIN);
-                    }
-                    break;
-                case "doi-mat-khau":
-                    if (customerService.checkLogged(req)) {
-                        showViewChangePassword(req, resp);
-                    } else {
-                        resp.sendRedirect(req.getContextPath() + LINK_CUSTOMER_LOGIN);
-                    }
-                    break;
-                case "hien-thi":
-                    if (adminService.checkLogged(req)) {
-                        showCustomer(req, resp);
-                    } else {
-                        resp.sendRedirect(req.getContextPath() + LINK_ADMIN_LOGIN);
-                    }
-                    break;
-                case "change-status":
-                    if (adminService.checkLogged(req)) {
-                        showViewChangeStatusAccount(req, resp);
-                    } else {
-                        resp.sendRedirect(req.getContextPath() + LINK_ADMIN_LOGIN);
-                    }
-                    break;
-                default:
-                    resp.sendRedirect(req.getContextPath() + "/");
+            if (request.equals("dang-ky")) {
+                showViewRegister(req, resp);
+                return;
             }
-        } catch (IOException | ServletException ex) {
+            if (request.equals("dang-nhap")) {
+                showViewLogin(req, resp);
+                return;
+            }
+            if (request.equals("dang-xuat")) {
+                logOut(req, resp);
+                return;
+            }
+            if (request.equals("sua")) {
+                if (!customerService.checkLogged(req)) {
+                    resp.sendRedirect(req.getContextPath() + LINK_CUSTOMER_LOGIN);
+                    return;
+                }
+                showViewUpdate(req, resp);
+                return;
+            }
+            if (request.equals("doi-mat-khau")) {
+                if (!customerService.checkLogged(req)) {
+                    resp.sendRedirect(req.getContextPath() + LINK_CUSTOMER_LOGIN);
+                    return;
+                }
+                showViewChangePassword(req, resp);
+                return;
+            }
+            if (!adminService.checkLogged(req)) {
+                resp.sendRedirect(req.getContextPath() + LINK_ADMIN_LOGIN);
+                return;
+            }
+            if (request.equals("hien-thi")) {
+                showCustomer(req, resp);
+                return;
+            }
+            if (request.equals("adminSearch")) {
+                searchCustomer(req, resp);
+                return;
+            }
+            if (request.equals("hienThiChiTiet")) {
+                showCustomerDetail(req, resp);
+            }
+        } catch (IOException |
+                ServletException ex) {
             Logger.getLogger(CustomerController.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -124,25 +127,29 @@ public class CustomerController extends HttpServlet {
         dispatcher.forward(req, resp);
     }
 
+    private void searchCustomer(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String customerName = req.getParameter(CUSTOMER_NAME);
+        List<Customer> listCustomer = customerService.searchCustomer(customerName);
+        req.setAttribute("listCustomer", listCustomer);
+        req.setAttribute(CUSTOMER_NAME, customerName);
+        RequestDispatcher dispatcher = req.getRequestDispatcher("/Admin/CustomerView.jsp");
+        dispatcher.forward(req, resp);
+    }
+
     private void showViewUpdate(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         HttpSession session = req.getSession();
         Customer customerLogin = (Customer) session.getAttribute("user");
         Customer customer = customerService.getCustomerById(String.valueOf(customerLogin.getCustomerId()));
-        if (customer != null) {
-            req.setAttribute(CUSTOMER, customer);
-            RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher(VIEW_EDIT_CUSTOMER);
-            dispatcher.forward(req, resp);
-        } else {
-            resp.sendRedirect(req.getContextPath() + LINK_CUSTOMER_LOGIN);
-        }
+        req.setAttribute(CUSTOMER, customer);
+        RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher(VIEW_EDIT_CUSTOMER);
+        dispatcher.forward(req, resp);
     }
 
-    private void showViewChangeStatusAccount(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        String customerId = req.getParameter(CUSTOMER_ID);
-        Customer customer = customerService.getCustomerById(customerId);
+    private void showCustomerDetail(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        Customer customer = customerService.getCustomerById(req.getParameter(CUSTOMER_ID));
         if (customer != null) {
             req.setAttribute(CUSTOMER, customer);
-            RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher(VIEW_CHANGE_STATUS_ACCOUNT);
+            RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher("/Admin/CustomerDetail.jsp");
             dispatcher.forward(req, resp);
         } else {
             resp.sendRedirect(req.getContextPath() + "/Customer?chucNang=hien-thi");
@@ -190,11 +197,8 @@ public class CustomerController extends HttpServlet {
                         changeStatusAccount(req, resp);
                         return;
                     }
-                    Customer customer = customerService.getCustomerById(req.getParameter(CUSTOMER_ID));
-                    req.setAttribute(ERROR, error);
-                    req.setAttribute(CUSTOMER, customer);
-                    dispatcher = req.getServletContext().getRequestDispatcher(VIEW_CHANGE_STATUS_ACCOUNT);
-                    dispatcher.forward(req, resp);
+                    resp.setContentType(CONTENT_TYPE);
+                    resp.getWriter().write("fail");
                     return;
                 default:
             }
@@ -325,21 +329,19 @@ public class CustomerController extends HttpServlet {
         dispatcher.forward(req, resp);
     }
 
-    private void changeStatusAccount(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    private void changeStatusAccount(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        resp.setContentType(CONTENT_TYPE);
         Customer customer = customerService.getCustomerById(req.getParameter(CUSTOMER_ID));
         if (customer == null) {
-            resp.sendRedirect(req.getContextPath() + "/Customer?chucNang=hien-thi");
+            resp.getWriter().write("fail");
             return;
         }
         customer.setStatusActive(Integer.parseInt(req.getParameter("statusActive")));
         int rowAffected = customerService.changeStatusAccount(customer);
         if (rowAffected == 1) {
-            req.setAttribute(MESSAGE, "Thay đổi trạng thái tài khoản khách hàng thành công");
+            resp.getWriter().write("success");
         } else {
-            req.setAttribute(MESSAGE, "Thay đổi trạng thái tài khoản khách hàng thất bại");
+            resp.getWriter().write("fail");
         }
-        req.setAttribute(CUSTOMER, customer);
-        RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher(VIEW_CHANGE_STATUS_ACCOUNT);
-        dispatcher.forward(req, resp);
     }
 }

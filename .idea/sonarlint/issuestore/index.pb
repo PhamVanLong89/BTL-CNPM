@@ -63,3 +63,23 @@ U
 BTL_CNPM.iml,9/0/90b76a384eaaac917078c9bcb1b35b08683b617e
 S
 #src/main/webapp/Admin/LoginView.jsp,e/7/e7784683977f708c523497ae0117e3ed6a6870a9
+`
+0src/main/java/org/example/model/OrderDetail.java,c/f/cf042fbd987132f72a54b8ad5e3bb713fa805a4e
+o
+?src/main/java/org/example/controller/OrderDetailController.java,f/7/f76251d96568eb5d8a54eb9bbc902a64e93a2a1e
+Q
+!src/main/webapp/Customer/Cart.jsp,e/9/e9a0e95a2baf00d6029a4bed9b9cd9183004c3d9
+i
+9src/main/java/org/example/service/OrderDetailService.java,7/6/76f506d67baa1efe1c53772e38a8fdb892450b03
+X
+(src/main/webapp/Admin/AddProductView.jsp,9/5/9569f3333e4faa8c294238f48f7fcb35f7530fb3
+Z
+*src/main/java/org/example/model/Order.java,f/b/fb8ff21cb600db54eb442f308f8033b0b01e0042
+i
+9src/main/java/org/example/repository/OrderRepository.java,7/c/7c207bac4548364c03221ddea79fb93aa8d7d5d7
+o
+?src/main/java/org/example/repository/OrderDetailRepository.java,5/b/5b02efcab32519c41b68cdf70ce606a789318ddb
+c
+3src/main/java/org/example/service/OrderService.java,7/f/7fda134f583e0a5a2e13f2a05f033c59f8d9cf24
+i
+9src/main/java/org/example/controller/OrderController.java,8/e/8e2158c0b396f02c7f1774d6aba49dcd267dc5d7

@@ -3,13 +3,8 @@ package org.example.controller;
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import org.apache.commons.math.util.MathUtils;
-import org.example.model.OrderDetail;
-import org.example.model.Product;
-import org.example.model.Variant;
-import org.example.service.CustomerService;
-import org.example.service.OrderDetailService;
-import org.example.service.ProductService;
-import org.example.service.VariantService;
+import org.example.model.*;
+import org.example.service.*;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -32,6 +27,8 @@ public class OrderDetailController extends HttpServlet {
     private final ProductService productService;
     private final VariantService variantService;
     private final CustomerService customerService;
+    private final OrderService orderService;
+    private final AdminService adminService;
     private static final String CONTENT_TYPE = "text/html;charset=UTF-8";
     private static final String QUANTITY = "quantity";
 
@@ -41,6 +38,8 @@ public class OrderDetailController extends HttpServlet {
         productService = new ProductService();
         variantService = new VariantService();
         customerService = new CustomerService();
+        orderService = new OrderService();
+        adminService = new AdminService();
     }
 
     @Override
@@ -56,13 +55,54 @@ public class OrderDetailController extends HttpServlet {
                 showCart(req, resp);
                 return;
             }
-            if (!customerService.checkLogged(req)) {
-                resp.sendRedirect(req.getContextPath() + "/Customer?chucNang=dang-nhap");
+            if (request.equals("chiTietDonHang")) {
+                if (!customerService.checkLogged(req)) {
+                    resp.sendRedirect(req.getContextPath() + "/Customer?chucNang=dang-nhap");
+                    return;
+                }
+                showOrderDetailOfCustomer(req, resp);
                 return;
+            }
+            if (!adminService.checkLogged(req)) {
+                resp.sendRedirect(req.getContextPath() + "/Admin?chucNang=dang-nhap");
+                return;
+            }
+            if (request.equals("chiTietDonHang2")) {
+                showOrderDetail(req, resp);
             }
         } catch (IOException | ServletException ex) {
             Logger.getLogger(ProductController.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+
+    private void showOrderDetailOfCustomer(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        HttpSession session = req.getSession();
+        Customer customer = (Customer) session.getAttribute("user");
+        String orderId = req.getParameter("orderId");
+        Order order = orderService.getOrderById(orderId);
+        if (order == null || order.getCustomer().getCustomerId() != customer.getCustomerId()) {
+            resp.sendRedirect(req.getContextPath() + "/Order?chucNang=donHangCuaToi");
+            return;
+        }
+        List<OrderDetail> listOrderDetail = orderDetailService.getOrderDetailByOrderId(Integer.parseInt(orderId));
+        req.setAttribute("order", order);
+        req.setAttribute("listOrderDetail", listOrderDetail);
+        RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher("/Customer/OrderDetail.jsp");
+        dispatcher.forward(req, resp);
+    }
+
+    private void showOrderDetail(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String orderId = req.getParameter("orderId");
+        Order order = orderService.getOrderById(orderId);
+        if (order == null) {
+            resp.sendRedirect(req.getContextPath() + "/Order?chucNang=danhSachDonHang");
+            return;
+        }
+        List<OrderDetail> listOrderDetail = orderDetailService.getOrderDetailByOrderId(Integer.parseInt(orderId));
+        req.setAttribute("order", order);
+        req.setAttribute("listOrderDetail", listOrderDetail);
+        RequestDispatcher dispatcher = req.getServletContext().getRequestDispatcher("/Admin/OrderDetail.jsp");
+        dispatcher.forward(req, resp);
     }
 
     private void showCart(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

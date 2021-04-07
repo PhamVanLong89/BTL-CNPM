@@ -1,3 +1,9 @@
+<%-- 
+    Document   : loginView
+    Created on : Feb 19, 2021, 9:46:05 PM
+    Author     : long
+--%>
+
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <!DOCTYPE html>

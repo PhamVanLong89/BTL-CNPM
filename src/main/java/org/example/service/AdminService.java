@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -248,4 +249,12 @@ public class AdminService {
     public int changePassword(Admin admin) {
         return adminRepository.changePassword(admin);
     }
+
+    public List<Admin> searchAdmin(String adminName) {
+        if (adminName == null || adminName.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return adminRepository.searchAdmin(adminName);
+    }
+
 }

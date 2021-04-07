@@ -199,7 +199,7 @@
                             </div>
                         </div>
                         <button type="submit" class="btn btn-info mt-4">Lưu sản phẩm</button>
-                        <button type="button" class="btn btn-dark mt-4"><a class="text-light" href="">Hủy</a></button>
+                        <a class="btn btn-dark mt-4 btn-lg" href="#" role="button"><i class="fa fa-arrow-circle-o-left" aria-hidden="true"></i></a>
                     </form>
                 </div>
             </main>
